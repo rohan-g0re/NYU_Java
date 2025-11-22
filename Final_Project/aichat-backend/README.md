@@ -45,20 +45,54 @@ mvn spring-boot:run
 ## API Endpoints
 
 ### Authentication
-- `POST /api/v1/auth/signup` - Create new user account
-- `POST /api/v1/auth/login` - Login with username/password
+- `POST /api/v1/auth/signup` - Create user (returns 201 Created)
+- `POST /api/v1/auth/login` - Authenticate user (returns 200 OK)
 
 ### Conversations
-- `POST /api/v1/conversations` - Create new conversation
-- `GET /api/v1/conversations` - Get user's conversations
-- `GET /api/v1/conversations/{id}/messages` - Get conversation messages
-- `POST /api/v1/conversations/{id}/messages` - Send message and get AI reply
-- `PUT /api/v1/conversations/{id}/title` - Update conversation title
-- `DELETE /api/v1/conversations/{id}` - Delete conversation (soft delete)
+- `POST /api/v1/conversations` - Create conversation (returns 201 Created)
+- `GET /api/v1/conversations` - List conversations (returns 200 OK)
+- `GET /api/v1/conversations/{id}/messages` - Get messages (returns 200 OK)
+- `PUT /api/v1/conversations/{id}/title` - Update title (returns 200 OK)
+- `DELETE /api/v1/conversations/{id}` - Delete conversation (returns 200 OK)
+
+### Messages
+- `POST /api/v1/conversations/{id}/messages` - Send message (returns 200 OK)
+
+### Headers
+All conversation/message endpoints require: `X-User-Id: {userId}`
+
+### Error Format
+All errors follow this standardized format:
+```json
+{
+  "error": "ERROR_CODE",
+  "message": "Human-readable error message"
+}
+```
+
+Common error codes:
+- `VALIDATION_ERROR` - Input validation failed (400)
+- `USER_NOT_FOUND` - User doesn't exist (404)
+- `CONVERSATION_NOT_FOUND` - Conversation doesn't exist (404)
+- `UNAUTHORIZED` - Access denied (403)
+- `LIMIT_EXCEEDED` - Resource limit reached (400)
+- `AI_SERVICE_ERROR` - Gemini API failure (500)
+- `INTERNAL_ERROR` - Unexpected server error (500)
 
 ## Testing
 
-Use Postman or curl to test endpoints:
+### Postman Collection
+Comprehensive test suite available:
+- **Collection:** `docs/postman/AI_Chat_Backend_API.json`
+- **Environment:** `docs/postman/AI_Chat_Backend_API_Environment.json`
+
+The collection includes 33+ test cases covering:
+- Authentication (8 tests)
+- Conversations (11 tests)
+- Messages (9 tests)
+- Error scenarios (5 tests)
+
+### Quick Test with curl
 
 ```bash
 # Signup
@@ -70,5 +104,15 @@ curl -X POST http://localhost:8080/api/v1/auth/signup \
 curl -X POST http://localhost:8080/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","password":"password123"}'
+
+# Create Conversation (replace {userId} with actual ID)
+curl -X POST http://localhost:8080/api/v1/conversations \
+  -H "Content-Type: application/json" \
+  -H "X-User-Id: {userId}" \
+  -d '{"title":"My First Chat"}'
 ```
+
+### Full API Documentation
+For complete API specifications, request/response formats, and examples, see:
+- `docs/LLD.md` sections 8.1-8.2 (API Specifications)
 

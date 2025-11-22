@@ -7,6 +7,8 @@ import com.nyu.aichat.dto.response.ConversationDto;
 import com.nyu.aichat.dto.response.MessageDto;
 import com.nyu.aichat.dto.response.SendMessageResponse;
 import com.nyu.aichat.service.ChatService;
+import com.nyu.aichat.util.HeaderValidator;
+import com.nyu.aichat.util.PathValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +31,7 @@ public class ChatController {
     public ResponseEntity<ConversationDto> createConversation(
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody CreateConversationRequest request) {
+        HeaderValidator.validateUserId(userId);
         ConversationDto conversation = chatService.createConversation(userId, request.getTitle());
         return ResponseEntity.status(HttpStatus.CREATED).body(conversation);
     }
@@ -36,6 +39,7 @@ public class ChatController {
     @GetMapping
     public ResponseEntity<List<ConversationDto>> getUserConversations(
             @RequestHeader("X-User-Id") Long userId) {
+        HeaderValidator.validateUserId(userId);
         List<ConversationDto> conversations = chatService.getUserConversations(userId);
         return ResponseEntity.ok(conversations);
     }
@@ -44,6 +48,8 @@ public class ChatController {
     public ResponseEntity<List<MessageDto>> getMessages(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
+        PathValidator.validateConversationId(id);
+        HeaderValidator.validateUserId(userId);
         List<MessageDto> messages = chatService.getConversationHistory(id, userId);
         return ResponseEntity.ok(messages);
     }
@@ -53,6 +59,8 @@ public class ChatController {
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody SendMessageRequest request) {
+        PathValidator.validateConversationId(id);
+        HeaderValidator.validateUserId(userId);
         MessageDto assistantMessage = chatService.sendUserMessageAndGetAiReply(id, userId, request.getText());
         return ResponseEntity.ok(new SendMessageResponse(assistantMessage));
     }
@@ -62,6 +70,8 @@ public class ChatController {
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody UpdateTitleRequest request) {
+        PathValidator.validateConversationId(id);
+        HeaderValidator.validateUserId(userId);
         chatService.updateConversationTitle(id, userId, request.getTitle());
         return ResponseEntity.ok().build();
     }
@@ -70,6 +80,8 @@ public class ChatController {
     public ResponseEntity<Void> deleteConversation(
             @PathVariable Long id,
             @RequestHeader("X-User-Id") Long userId) {
+        PathValidator.validateConversationId(id);
+        HeaderValidator.validateUserId(userId);
         chatService.deleteConversation(id, userId);
         return ResponseEntity.ok().build();
     }
