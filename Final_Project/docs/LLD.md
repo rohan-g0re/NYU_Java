@@ -18,13 +18,20 @@ Generating the complete LLD document.
 5. [Backend Class Design](#5-backend-class-design)
 6. [Frontend Package Structure](#6-frontend-package-structure)
 7. [Frontend Class Design](#7-frontend-class-design)
-8. [API Specifications](#8-api-specifications)
-9. [Sequence Diagrams](#9-sequence-diagrams)
-10. [Threading Model](#10-threading-model)
-11. [Error Handling Strategy](#11-error-handling-strategy)
-12. [Gemini Integration](#12-gemini-integration)
-13. [Linked-List Integrity Rules](#13-linked-list-integrity-rules)
-14. [Security Implementation](#14-security-implementation)
+8. [Client-Backend Integration](#8-client-backend-integration)
+9. [API Specifications](#9-api-specifications)
+10. [Sequence Diagrams](#10-sequence-diagrams)
+11. [Threading Model](#11-threading-model)
+12. [Error Handling Strategy](#12-error-handling-strategy)
+13. [Gemini Integration](#13-gemini-integration)
+14. [Linked-List Integrity Rules](#14-linked-list-integrity-rules)
+15. [Security Implementation](#15-security-implementation)
+16. [Configuration Files](#16-configuration-files)
+17. [Database Initialization Script](#17-database-initialization-script)
+18. [Implementation Checklist](#18-implementation-checklist)
+19. [Testing Strategy](#19-testing-strategy)
+20. [Deployment Instructions](#20-deployment-instructions)
+21. [Summary](#21-summary)
 
 ---
 
@@ -107,20 +114,36 @@ NYU_Java/
 │   │   │   └── test/
 │   │   └── README.md
 │   │
-│   └── aichat-client/                     # Swing Desktop Maven Project
+│   └── aichat-swing-client/               # Swing Desktop Maven Project
 │       ├── pom.xml
+│       ├── README.md
 │       ├── src/
-│       │   └── main/
+│       │   ├── main/
+│       │   │   ├── java/
+│       │   │   │   └── com/nyu/aichat/client/
+│       │   │   │       ├── Main.java
+│       │   │   │       ├── api/
+│       │   │   │       │   ├── ApiClient.java
+│       │   │   │       │   └── ApiException.java
+│       │   │   │       ├── model/
+│       │   │   │       │   ├── UserSession.java
+│       │   │   │       │   ├── ConversationView.java
+│       │   │   │       │   └── MessageView.java
+│       │   │   │       ├── ui/
+│       │   │   │       │   ├── LoginFrame.java
+│       │   │   │       │   ├── MainChatFrame.java
+│       │   │   │       │   ├── ConversationPanel.java
+│       │   │   │       │   ├── MessagePanel.java
+│       │   │   │       │   ├── MessageBubble.java
+│       │   │   │       │   └── InputPanel.java
+│       │   │   │       └── util/
+│       │   │   │           ├── ConfigLoader.java
+│       │   │   │           └── JsonParser.java
+│       │   │   └── resources/
+│       │   │       └── config.properties
+│       │   └── test/
 │       │       └── java/
-│       │           └── com/nyu/aichat/client/
-│       │               ├── Main.java
-│       │               ├── api/
-│       │               ├── model/
-│       │               ├── ui/
-│       │               └── util/
-│       ├── resources/
-│       │   └── config.properties
-│       └── README.md
+│       └── target/                         # Maven build output
 ```
 
 ---
@@ -628,27 +651,28 @@ public class ErrorResponse {
 
 ```
 com.nyu.aichat.client/
-├── Main.java                          # Entry point
+├── Main.java                          # Entry point - launches LoginFrame
 │
 ├── api/
-│   └── ApiClient.java                 # HTTP client wrapper
+│   ├── ApiClient.java                 # HTTP client wrapper for backend API
+│   └── ApiException.java              # Custom exception for API errors
 │
 ├── model/
-│   ├── UserSession.java               # Stores userId + username
-│   ├── ConversationView.java          # Conversation data model
-│   └── MessageView.java               # Message data model
+│   ├── UserSession.java               # Immutable session data (userId + username)
+│   ├── ConversationView.java          # Conversation data model (maps from ConversationDto)
+│   └── MessageView.java               # Message data model (maps from MessageDto)
 │
 ├── ui/
-│   ├── LoginFrame.java                # Login/signup window
-│   ├── MainChatFrame.java             # Main chat interface
-│   ├── ConversationPanel.java         # Left sidebar component
-│   ├── MessagePanel.java              # Chat messages display
-│   ├── MessageBubble.java             # Individual message UI component
-│   └── InputPanel.java                # Message input + send button
+│   ├── LoginFrame.java                # Login/signup window with validation
+│   ├── MainChatFrame.java             # Main chat interface (split pane layout)
+│   ├── ConversationPanel.java         # Left sidebar with conversation list
+│   ├── MessagePanel.java              # Scrollable chat messages display
+│   ├── MessageBubble.java             # Individual message UI component (styled bubbles)
+│   └── InputPanel.java                # Message input + send button (Enter key support)
 │
 └── util/
-    ├── JsonParser.java                # JSON parsing (Gson wrapper)
-    └── ConfigLoader.java              # Loads config.properties
+    ├── ConfigLoader.java              # Loads config.properties (API URL, timeouts, UI settings)
+    └── JsonParser.java                # JSON parsing utilities (Gson wrapper with Instant support)
 ```
 
 ---
@@ -663,8 +687,9 @@ public class ApiClient {
     private static final String DEFAULT_BASE_URL = "http://localhost:8080/api/v1";
     private final String baseUrl;
     private final ExecutorService executorService;
+    private final Gson gson;  // Configured with Instant deserializer
     
-    public ApiClient();
+    public ApiClient();  // Uses ConfigLoader.getApiBaseUrl()
     public ApiClient(String baseUrl);
     
     // Auth endpoints
@@ -682,20 +707,52 @@ public class ApiClient {
     public MessageView sendMessage(Long conversationId, Long userId, String text) throws ApiException;
     
     // HTTP helper methods
-    private String sendGetRequest(String endpoint, Long userId) throws IOException;
-    private String sendPostRequest(String endpoint, Long userId, Object body) throws IOException;
-    private String sendPutRequest(String endpoint, Long userId, Object body) throws IOException;
-    private String sendDeleteRequest(String endpoint, Long userId) throws IOException;
+    private String sendGetRequest(String endpoint, Long userId) throws ApiException;
+    private String sendPostRequest(String endpoint, Long userId, Object body) throws ApiException;
+    private String sendPutRequest(String endpoint, Long userId, Object body) throws ApiException;
+    private String sendDeleteRequest(String endpoint, Long userId) throws ApiException;
     private HttpURLConnection createConnection(String endpoint, String method, Long userId) throws IOException;
+    private String readResponse(HttpURLConnection conn) throws IOException;
+    private ApiException parseErrorResponse(HttpURLConnection conn, int responseCode) throws IOException;
+    
+    public void shutdown();  // Shutdown executor service
+    
+    // Inner class for LoginResponse
+    public static class LoginResponse {
+        private Long userId;
+        private String username;
+    }
 }
 ```
 
 **Key Features:**
-- Base URL configurable via `config.properties`
-- All methods throw `ApiException` (checked exception)
-- Sets `X-User-Id` header automatically
-- Uses `HttpURLConnection` for HTTP calls
-- JSON serialization/deserialization via Gson
+- Base URL configurable via `config.properties` (defaults to `http://localhost:8080/api/v1`)
+- All methods throw `ApiException` (checked exception) with error code and HTTP status
+- Sets `X-User-Id` header automatically for authenticated endpoints
+- Uses `HttpURLConnection` for HTTP calls (no external HTTP library)
+- JSON serialization/deserialization via Gson with custom `Instant` adapter
+- Configurable timeout (default 30 seconds)
+- Proper error handling: parses backend `ErrorResponse` format `{"error": "CODE", "message": "text"}`
+- Handles network errors, HTTP errors, and JSON parsing errors
+
+#### `ApiException.java`
+```java
+public class ApiException extends Exception {
+    private final String errorCode;      // Backend error code (e.g., "USER_NOT_FOUND")
+    private final int httpStatus;        // HTTP status code (e.g., 404)
+    
+    public ApiException(String errorCode, String message, int httpStatus);
+    public ApiException(String errorCode, String message);
+    
+    public String getErrorCode();
+    public int getHttpStatus();
+}
+```
+
+**Error Handling:**
+- Network errors: `errorCode = "NETWORK_ERROR"`
+- Backend errors: Parsed from `ErrorResponse` JSON
+- Unknown errors: `errorCode = "UNKNOWN_ERROR"`
 
 ---
 
@@ -864,7 +921,253 @@ public class InputPanel extends JPanel {
 
 ---
 
-## 8. API Specifications
+## 8. Client-Backend Integration
+
+### 8.1 Integration Architecture
+
+**Communication Flow:**
+```
+Swing Client (Java)
+    │
+    │ HTTP/REST (JSON)
+    │ X-User-Id Header
+    ▼
+Spring Boot Backend (Java)
+    │
+    │ JDBC
+    ▼
+PostgreSQL Database
+```
+
+**Key Integration Points:**
+
+1. **Authentication:**
+   - Client sends username/password to `/api/v1/auth/login` or `/api/v1/auth/signup`
+   - Backend validates credentials and returns `LoginResponse` with `userId` and `username`
+   - Client stores `UserSession` (immutable) for subsequent requests
+   - No session tokens - uses `X-User-Id` header for authentication
+
+2. **API Communication:**
+   - All API calls use JSON for request/response bodies
+   - Content-Type: `application/json`
+   - Accept: `application/json`
+   - Authenticated endpoints require `X-User-Id: {userId}` header
+   - Base URL configurable via `config.properties`
+
+3. **Data Mapping:**
+   - Backend DTOs → Client View Models:
+     - `LoginResponse` → `UserSession`
+     - `ConversationDto` → `ConversationView`
+     - `MessageDto` → `MessageView`
+     - `SendMessageResponse.assistantMessage` → `MessageView`
+   - Field names match exactly (Gson handles mapping)
+   - `Instant` fields serialized as ISO-8601 strings, deserialized with custom adapter
+
+4. **Error Handling:**
+   - Backend returns `ErrorResponse`: `{"error": "CODE", "message": "text"}`
+   - Client parses error response and creates `ApiException`
+   - UI displays error messages via `JOptionPane` or error labels
+   - Network errors handled separately (connection refused, timeout)
+
+### 8.2 Request/Response Flow Examples
+
+#### Login Request Flow:
+```
+LoginFrame.onLoginClick()
+  → ExecutorService.execute()
+    → ApiClient.login(username, password)
+      → HTTP POST /api/v1/auth/login
+        → Backend: AuthController.login()
+          → Backend: AuthService.login()
+            → Database: UserRepository.findByUsername()
+            → BCrypt: passwordEncoder.matches()
+          → Returns: LoginResponse
+      → Client: Parse JSON to LoginResponse
+    → SwingUtilities.invokeLater()
+      → LoginFrame.handleAuthSuccess()
+        → Create UserSession
+        → Dispose LoginFrame
+        → Open MainChatFrame
+```
+
+#### Send Message Flow:
+```
+InputPanel.onSendClick()
+  → MainChatFrame.onSendMessage(text)
+    → Optimistic Update: Add user message to UI immediately
+    → ExecutorService.execute()
+      → ApiClient.sendMessage(convId, userId, text)
+        → HTTP POST /api/v1/conversations/{id}/messages
+          → Backend: ChatController.sendMessage()
+            → Backend: ChatService.sendUserMessageAndGetAiReply()
+              → Save user message to database
+              → GeminiService.generateResponse()
+                → HTTP POST to Gemini API
+                → Clean response
+              → Save assistant message to database
+              → Returns: SendMessageResponse
+          → Client: Parse JSON, extract assistantMessage
+        → SwingUtilities.invokeLater()
+          → MessagePanel.addMessage(assistantMessage)
+            → Create MessageBubble
+            → Add to UI
+            → Scroll to bottom
+```
+
+### 8.3 Threading Model for Integration
+
+**Client Threading:**
+- **EDT (Event Dispatch Thread):** All UI operations
+- **Background Threads:** All API calls via `ExecutorService`
+
+**Pattern:**
+```java
+// In UI component (runs on EDT)
+executorService.execute(() -> {
+    try {
+        // API call (runs on background thread)
+        MessageView response = apiClient.sendMessage(convId, userId, text);
+        
+        // UI update (must run on EDT)
+        SwingUtilities.invokeLater(() -> {
+            messagePanel.addMessage(response, false);
+        });
+    } catch (ApiException e) {
+        // Error handling (must run on EDT)
+        SwingUtilities.invokeLater(() -> {
+            JOptionPane.showMessageDialog(frame, e.getMessage());
+        });
+    }
+});
+```
+
+**Backend Threading:**
+- Each HTTP request handled in separate thread (Tomcat thread pool)
+- Database operations thread-safe via connection pooling
+- Gemini API calls blocking (within HTTP request thread)
+
+### 8.4 Configuration Synchronization
+
+**Backend Configuration:**
+- Port: `server.port=8080` (in `application.properties`)
+- Database: PostgreSQL connection settings
+- Gemini API: `GEMINI_API_KEY` environment variable
+
+**Client Configuration:**
+- API URL: `api.baseUrl=http://localhost:8080/api/v1` (in `config.properties`)
+- Must match backend port
+- Timeout: `api.timeout.ms=30000` (should be > Gemini timeout)
+
+**Verification:**
+1. Start backend: `cd aichat-backend && mvn spring-boot:run`
+2. Verify backend: `curl http://localhost:8080/api/v1/auth/login`
+3. Start client: `cd aichat-swing-client && mvn exec:java`
+4. Test connection: Attempt login (should connect successfully)
+
+### 8.5 Data Flow Diagrams
+
+#### Conversation List Loading:
+```
+MainChatFrame constructor
+  → loadConversations()
+    → ExecutorService.execute()
+      → ApiClient.getConversations(userId)
+        → HTTP GET /api/v1/conversations
+          → Backend: ChatController.getUserConversations()
+            → Backend: ChatService.getUserConversations()
+              → Database: ConversationRepository.findByUserIdAndIsDeletedFalse()
+              → Returns: List<ConversationDto>
+          → Client: Parse JSON to List<ConversationView>
+        → SwingUtilities.invokeLater()
+          → ConversationPanel.setConversations()
+            → Update JList model
+            → Refresh UI
+```
+
+#### Message History Loading:
+```
+ConversationPanel.onConversationSelected(convId)
+  → MainChatFrame.onConversationSelected(convId)
+    → ExecutorService.execute()
+      → ApiClient.getMessages(convId, userId)
+        → HTTP GET /api/v1/conversations/{id}/messages
+          → Backend: ChatController.getMessages()
+            → Backend: ChatService.getConversationHistory()
+              → Database: MessageRepository.findByConversationIdOrderByTimestampAscIdAsc()
+              → Returns: List<MessageDto>
+          → Client: Parse JSON to List<MessageView>
+        → SwingUtilities.invokeLater()
+          → MessagePanel.setMessages()
+            → Clear existing messages
+            → Create MessageBubble for each message
+            → Add to UI
+            → Scroll to bottom
+```
+
+### 8.6 Error Scenarios and Handling
+
+**Network Errors:**
+- Backend offline: `ApiException("NETWORK_ERROR", "Failed to connect to server")`
+- Timeout: `ApiException` with timeout message
+- Client handling: Show `JOptionPane` with error message
+
+**HTTP Errors:**
+- 400 Bad Request: Parse `ErrorResponse`, show validation error
+- 401 Unauthorized: Show login error, stay on login screen
+- 403 Forbidden: Show access denied, refresh conversation list
+- 404 Not Found: Show "Resource not found" message
+- 500 Internal Server Error: Show "Server error, please try again"
+
+**Data Errors:**
+- Invalid JSON: Catch `JsonSyntaxException`, show parse error
+- Missing fields: Gson uses defaults (null for missing fields)
+- Type mismatches: Gson throws exception, caught as `ApiException`
+
+### 8.7 Testing Integration
+
+**Manual Integration Tests:**
+
+1. **End-to-End Login:**
+   ```bash
+   # Terminal 1: Start backend
+   cd aichat-backend
+   mvn spring-boot:run
+   
+   # Terminal 2: Start client
+   cd aichat-swing-client
+   mvn exec:java -Dexec.mainClass="com.nyu.aichat.client.Main"
+   
+   # In client: Login with test credentials
+   # Verify: MainChatFrame opens, conversations load
+   ```
+
+2. **Message Flow Test:**
+   - Create new conversation
+   - Send message: "Hello"
+   - Verify: User message appears immediately (optimistic)
+   - Verify: AI response appears after 2-5 seconds
+   - Verify: Both messages persist after restart
+
+3. **Error Handling Test:**
+   - Stop backend server
+   - In client: Attempt to send message
+   - Verify: Error dialog appears
+   - Restart backend
+   - Verify: Client can reconnect
+
+**Integration Checklist:**
+- [ ] Backend starts successfully
+- [ ] Client connects to backend
+- [ ] Login/signup works
+- [ ] Conversations load
+- [ ] Messages send and receive
+- [ ] Errors display correctly
+- [ ] UI updates on EDT
+- [ ] No UI freezing during API calls
+
+---
+
+## 9. API Specifications
 
 ### 8.1 Authentication Endpoints
 
@@ -1284,7 +1587,7 @@ X-User-Id: 1
 
 ---
 
-## 10. Threading Model
+## 11. Threading Model
 
 ### 10.1 Backend Threading
 
@@ -1347,7 +1650,7 @@ executorService.submit(() -> {
 
 ---
 
-## 11. Error Handling Strategy
+## 12. Error Handling Strategy
 
 ### 11.1 Backend Error Handling
 
@@ -1405,7 +1708,7 @@ ApiException (base)
 
 ---
 
-## 12. Gemini Integration
+## 13. Gemini Integration
 
 ### 12.1 API Configuration
 
@@ -1487,7 +1790,7 @@ https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateConte
 
 ---
 
-## 13. Linked-List Integrity Rules
+## 14. Linked-List Integrity Rules
 
 ### 13.1 Message Insertion Algorithm
 
@@ -1560,7 +1863,7 @@ ORDER BY ts ASC, id ASC;
 
 ---
 
-## 14. Security Implementation
+## 15. Security Implementation
 
 ### 14.1 Password Security
 
@@ -1636,7 +1939,7 @@ public ResponseEntity<List<MessageDto>> getMessages(
 
 ---
 
-## 15. Configuration Files
+## 16. Configuration Files
 
 ### 15.1 Backend `application.properties`
 
@@ -1671,18 +1974,34 @@ logging.level.org.springframework.web=INFO
 
 ### 15.2 Frontend `config.properties`
 
+**File:** `src/main/resources/config.properties`
+
 ```properties
 # API Configuration
-api.base.url=http://localhost:8080/api/v1
+api.baseUrl=http://localhost:8080/api/v1
+api.timeout.ms=30000
 
-# UI Configuration (optional)
-ui.message.max.width=400
-ui.message.bubble.padding=10
+# UI Configuration
+ui.window.width=1200
+ui.window.height=800
+ui.conversation.panel.width=250
 ```
+
+**Configuration Details:**
+- `api.baseUrl`: Backend API base URL (must match backend server port)
+- `api.timeout.ms`: HTTP request timeout in milliseconds (default: 30000)
+- `ui.window.width`: Main window width in pixels (default: 1200)
+- `ui.window.height`: Main window height in pixels (default: 800)
+- `ui.conversation.panel.width`: Left sidebar width in pixels (default: 250)
+
+**Loading:**
+- Loaded via `ConfigLoader` class using `ClassLoader.getResourceAsStream()`
+- Defaults provided if file missing or property not found
+- Loaded once at class initialization (static block)
 
 ---
 
-## 16. Database Initialization Script
+## 17. Database Initialization Script
 
 ### `schema.sql`
 
@@ -1732,7 +2051,7 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
 
 ---
 
-## 17. Implementation Checklist
+## 18. Implementation Checklist
 
 ### Phase 1: Backend Setup
 - [ ] Create Spring Boot project (Maven)
@@ -1776,12 +2095,62 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
 - [ ] Implement `InputPanel`
 
 ### Phase 7: Integration
-- [ ] Connect frontend to backend
-- [ ] Test login/signup flow
-- [ ] Test conversation creation
-- [ ] Test message sending
-- [ ] Test Gemini integration
-- [ ] Test error handling
+- [ ] **Backend Setup:**
+  - [ ] Start Spring Boot backend server (`mvn spring-boot:run`)
+  - [ ] Verify backend is running on `http://localhost:8080`
+  - [ ] Test backend endpoints with Postman/curl
+  - [ ] Ensure database is initialized and accessible
+  - [ ] Set `GEMINI_API_KEY` environment variable
+  
+- [ ] **Client Configuration:**
+  - [ ] Verify `config.properties` has correct `api.baseUrl`
+  - [ ] Ensure backend URL matches backend server port
+  - [ ] Test `ConfigLoader` reads properties correctly
+  
+- [ ] **API Client Integration:**
+  - [ ] Test `ApiClient` can connect to backend
+  - [ ] Verify `X-User-Id` header is sent correctly
+  - [ ] Test error handling (network errors, HTTP errors)
+  - [ ] Verify JSON parsing works (Instant deserialization)
+  - [ ] Test all API endpoints from client
+  
+- [ ] **Authentication Flow:**
+  - [ ] Test login with valid credentials
+  - [ ] Test login with invalid credentials (error display)
+  - [ ] Test signup with new username
+  - [ ] Test signup with existing username (error handling)
+  - [ ] Verify `UserSession` is created correctly
+  - [ ] Verify `LoginFrame` transitions to `MainChatFrame`
+  
+- [ ] **Conversation Management:**
+  - [ ] Test conversation list loads on startup
+  - [ ] Test creating new conversation
+  - [ ] Test selecting existing conversation
+  - [ ] Test deleting conversation (with confirmation)
+  - [ ] Verify conversation panel updates correctly
+  
+- [ ] **Message Flow:**
+  - [ ] Test sending user message (optimistic update)
+  - [ ] Test receiving AI response
+  - [ ] Test message history loads correctly
+  - [ ] Test multiple messages in sequence
+  - [ ] Test switching conversations preserves state
+  - [ ] Verify message bubbles render correctly (user right, assistant left)
+  
+- [ ] **Error Handling:**
+  - [ ] Test network error (backend offline)
+  - [ ] Test timeout error (slow backend)
+  - [ ] Test backend error responses (400, 404, 500)
+  - [ ] Verify error messages display correctly
+  - [ ] Test concurrent message sending
+  
+- [ ] **UI/UX Testing:**
+  - [ ] Test Enter key sends message
+  - [ ] Test Shift+Enter creates new line
+  - [ ] Test scrolling in message panel
+  - [ ] Test window resizing
+  - [ ] Test conversation list scrolling
+  - [ ] Verify loading states (button disabled during API calls)
 
 ### Phase 8: Polish
 - [ ] Add loading indicators
@@ -1792,7 +2161,7 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
 
 ---
 
-## 18. Testing Strategy
+## 19. Testing Strategy
 
 ### 18.1 Backend Testing
 
@@ -1841,7 +2210,7 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
 
 ---
 
-## 19. Deployment Instructions
+## 20. Deployment Instructions
 
 ### 19.1 Backend Deployment
 
@@ -1874,29 +2243,45 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
 
 ---
 
-### 19.2 Frontend Deployment
+### 20.2 Frontend Deployment
 
 1. **Prerequisites:**
    - JDK 1.8 installed
-   - Backend running on `localhost:8080`
+   - Maven 3.6+ installed
+   - Backend running on `localhost:8080` (or configured port)
 
 2. **Configuration:**
-   - Edit `config.properties` if backend URL differs
+   - Edit `src/main/resources/config.properties` if backend URL differs:
+     ```properties
+     api.baseUrl=http://localhost:8080/api/v1
+     ```
+   - Adjust UI settings if needed (window size, panel width)
 
-3. **Build & Run:**
+3. **Build:**
    ```bash
-   cd aichat-client
+   cd aichat-swing-client
    mvn clean package
-   java -jar target/aichat-client-1.0.0.jar
+   ```
+   This creates `target/aichat-swing-client-1.0.0.jar`
+
+4. **Run:**
+   ```bash
+   # Option 1: Run JAR directly
+   java -jar target/aichat-swing-client-1.0.0.jar
+   
+   # Option 2: Run with Maven
+   mvn exec:java -Dexec.mainClass="com.nyu.aichat.client.Main"
    ```
 
-4. **Verify:**
+5. **Verify:**
    - Login window appears
-   - Can connect to backend
+   - Can connect to backend (test login)
+   - Conversations load after login
+   - Messages send and receive correctly
 
 ---
 
-## 20. Summary
+## 21. Summary
 
 This LLD provides:
 
