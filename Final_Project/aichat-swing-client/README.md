@@ -75,8 +75,6 @@ aichat-swing-client/
 │   │   │           └── JsonParser.java          # JSON parsing utilities
 │   │   └── resources/
 │   │       └── config.properties                # Configuration file
-│   └── test/
-│       └── java/                                # Test classes
 ```
 
 ## API Integration
@@ -96,7 +94,6 @@ All authenticated endpoints require the `X-User-Id` header.
 ## Dependencies
 
 - **Gson 2.10.1**: JSON serialization/deserialization
-- **JUnit 4.13.2**: Testing framework (test scope)
 
 ## Usage
 
