@@ -1,8 +1,5 @@
 # AI Chat Desktop Application
 
-> **Project Status:** ✅ Fully Implemented
-> **Last Updated:** December 10, 2025
-
 A Java-based desktop application that enables users to chat with an AI assistant (Google Gemini) through a modern Swing interface, backed by a Spring Boot REST API and PostgreSQL database.
 
 ---
@@ -10,14 +7,41 @@ A Java-based desktop application that enables users to chat with an AI assistant
 ## Table of Contents
 
 1. [Overview](#overview)
+   - [Features](#features)
+   - [Project Structure](#project-structure)
 2. [Architecture](#architecture)
+   - [High-Level Architecture](#high-level-architecture)
+   - [Communication Flow](#communication-flow)
 3. [Technology Stack](#technology-stack)
+   - [Backend](#backend)
+   - [Frontend](#frontend)
+   - [Build Tools](#build-tools)
 4. [Key Components](#key-components)
+   - [Backend Components](#backend-components)
+   - [Frontend Components](#frontend-components)
 5. [Database Schema](#database-schema)
+   - [Tables](#tables)
+   - [Linked-List Structure](#linked-list-structure)
 6. [API Endpoints](#api-endpoints)
+   - [Authentication](#authentication)
+   - [Conversations](#conversations)
 7. [Advanced Java Concepts](#advanced-java-concepts)
+   - [GUI Programming](#1-gui-programming-java-swing)
+   - [Database & JDBC](#2-database--jdbc)
+   - [Spring Framework](#3-spring-framework)
+   - [Multithreading](#4-multithreading)
+   - [Networking](#5-networking)
+   - [Security](#6-security)
 8. [User Interface](#user-interface)
+   - [Login Screen](#login-screen)
+   - [Chat Window](#chat-window)
+   - [Conversation Management](#conversation-management)
+   - [AI Context and Responses](#ai-context-and-responses)
 9. [How to Run](#how-to-run)
+   - [Prerequisites](#prerequisites)
+   - [Setup Steps](#setup-steps)
+   - [Configuration](#configuration)
+10. [Documentation](#documentation)
 
 ---
 
