@@ -1,0 +1,37 @@
+# Application Properties Template
+# 
+# To use this file:
+# 1. Copy this file to application.properties
+# 2. Replace YOUR_POSTGRES_PASSWORD with your actual PostgreSQL password
+# 3. Replace YOUR_GEMINI_API_KEY with your actual Google Gemini API key
+#
+# Note: application.properties is gitignored to protect sensitive credentials
+
+# Server Configuration
+server.port=8080
+spring.application.name=aichat-backend
+
+# Database Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/ai_chat
+spring.datasource.username=postgres
+spring.datasource.password=YOUR_POSTGRES_PASSWORD
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA Configuration
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.hibernate.format_sql=true
+
+# Connection Pool (HikariCP)
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.connection-timeout=30000
+
+# Logging
+logging.level.com.nyu.aichat=INFO
+logging.level.org.springframework.web=INFO
+
+# Gemini API Configuration
+gemini.api.key=YOUR_GEMINI_API_KEY
+
