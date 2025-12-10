@@ -1,3 +1,6 @@
+# Sensitive configuration (contains API keys and database credentials)
+Final_Project/aichat-backend/src/main/resources/application.properties
+
 # Compiled class files
 *.class
 
