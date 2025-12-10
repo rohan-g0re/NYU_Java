@@ -76,7 +76,8 @@ public class ChatService {
         
         // Set default title if needed
         if (title == null || title.trim().isEmpty()) {
-            title = title == null ? Constants.DEFAULT_TITLE_NEW : Constants.DEFAULT_TITLE_UNTITLED;
+            // Generate serial title: "New Chat 1", "New Chat 2", etc.
+            title = "New Chat " + (currentCount + 1);
         }
         
         // Create conversation

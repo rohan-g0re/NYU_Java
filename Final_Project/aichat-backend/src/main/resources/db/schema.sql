@@ -29,7 +29,7 @@ CREATE INDEX IF NOT EXISTS idx_conv_deleted ON conversation(user_id, is_deleted)
 CREATE TABLE IF NOT EXISTS message (
     id BIGSERIAL PRIMARY KEY,
     conv_id INT NOT NULL REFERENCES conversation(id),
-    role TEXT CHECK (role IN ('user','assistant')) NOT NULL,
+    role TEXT CHECK (role IN ('USER','ASSISTANT')) NOT NULL,
     content TEXT NOT NULL,
     ts TIMESTAMPTZ DEFAULT now(),
     prev_message_id BIGINT NULL REFERENCES message(id),

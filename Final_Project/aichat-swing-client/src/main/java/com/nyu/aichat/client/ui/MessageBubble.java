@@ -12,7 +12,7 @@ import java.time.format.DateTimeFormatter;
  * Displays message content and timestamp.
  */
 public class MessageBubble extends JPanel {
-    private JLabel contentLabel;
+    private JTextArea contentArea;
     private JLabel timestampLabel;
     private boolean isUserMessage;
     
@@ -25,24 +25,30 @@ public class MessageBubble extends JPanel {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setOpaque(false);
         
-        // Content label
-        contentLabel = new JLabel("<html><div style='width: 400px;'>" + 
-                                 escapeHtml(content) + "</div></html>");
-        contentLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-        contentLabel.setOpaque(true);
-        contentLabel.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        // Use JTextArea for proper word wrapping
+        contentArea = new JTextArea(content);
+        contentArea.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+        contentArea.setEditable(false);
+        contentArea.setFocusable(false);
+        contentArea.setOpaque(true);
+        contentArea.setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        contentArea.setLineWrap(true);
+        contentArea.setWrapStyleWord(true);
+        
+        // Set fixed width and let JTextArea calculate the height automatically
+        int maxWidth = 400;
+        contentArea.setSize(maxWidth, Short.MAX_VALUE);
+        contentArea.setPreferredSize(new Dimension(maxWidth, contentArea.getPreferredSize().height));
         
         if (isUserMessage) {
-            contentLabel.setBackground(new Color(0, 123, 255)); // Blue
-            contentLabel.setForeground(Color.WHITE);
-            contentLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+            contentArea.setBackground(new Color(0, 123, 255)); // Blue
+            contentArea.setForeground(Color.WHITE);
         } else {
-            contentLabel.setBackground(new Color(233, 236, 239)); // Light gray
-            contentLabel.setForeground(Color.BLACK);
-            contentLabel.setHorizontalAlignment(SwingConstants.LEFT);
+            contentArea.setBackground(new Color(233, 236, 239)); // Light gray
+            contentArea.setForeground(Color.BLACK);
         }
         
-        add(contentLabel);
+        add(contentArea);
         
         // Timestamp label
         timestampLabel = new JLabel(formatTimestamp(timestamp));
@@ -51,24 +57,18 @@ public class MessageBubble extends JPanel {
         timestampLabel.setBorder(BorderFactory.createEmptyBorder(2, 12, 0, 12));
         
         if (isUserMessage) {
-            timestampLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        } else {
             timestampLabel.setHorizontalAlignment(SwingConstants.LEFT);
+        } else {
+            timestampLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         }
         
         add(timestampLabel);
         
         // Set alignment
-        setAlignmentX(isUserMessage ? Component.RIGHT_ALIGNMENT : Component.LEFT_ALIGNMENT);
+        setAlignmentX(isUserMessage ? Component.LEFT_ALIGNMENT : Component.RIGHT_ALIGNMENT);
         setMaximumSize(new Dimension(500, Integer.MAX_VALUE));
     }
     
-    private String escapeHtml(String text) {
-        return text.replace("&", "&amp;")
-                  .replace("<", "&lt;")
-                  .replace(">", "&gt;")
-                  .replace("\n", "<br>");
-    }
     
     private String formatTimestamp(Instant timestamp) {
         if (timestamp == null) {

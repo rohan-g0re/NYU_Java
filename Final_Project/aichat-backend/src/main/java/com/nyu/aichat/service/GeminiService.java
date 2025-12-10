@@ -30,7 +30,7 @@ public class GeminiService {
     private static final Logger logger = LoggerFactory.getLogger(GeminiService.class);
     
     private static final String GEMINI_API_KEY = System.getenv("GEMINI_API_KEY");
-    private static final String MODEL = "gemini-pro";
+    private static final String MODEL = "gemini-2.5-flash";
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent";
     private static final int TIMEOUT_SECONDS = 10000; // 10 seconds in milliseconds
     private static final int CONTEXT_MESSAGES = 6;

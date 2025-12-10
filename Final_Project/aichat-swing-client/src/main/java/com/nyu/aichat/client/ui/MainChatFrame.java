@@ -68,7 +68,8 @@ public class MainChatFrame extends JFrame {
         conversationPanel = new ConversationPanel(
             this::onConversationSelected,
             this::onNewChat,
-            this::onDeleteConversation
+            this::onDeleteConversation,
+            this::onRenameConversation
         );
         mainSplitPane.setLeftComponent(conversationPanel);
         
@@ -142,6 +143,63 @@ public class MainChatFrame extends JFrame {
                 SwingUtilities.invokeLater(() -> {
                     JOptionPane.showMessageDialog(this,
                         "Failed to create conversation: " + e.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        });
+    }
+    
+    private void onRenameConversation(Long conversationId) {
+        // Find current title
+        ConversationView conversation = conversationPanel.getConversationById(conversationId);
+        if (conversation == null) {
+            JOptionPane.showMessageDialog(this,
+                "Conversation not found",
+                "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        String currentTitle = conversation.getTitle();
+        if (currentTitle == null) {
+            currentTitle = "";
+        }
+        
+        // Show input dialog
+        String inputTitle = JOptionPane.showInputDialog(this,
+            "Enter new conversation title:",
+            "Rename Conversation",
+            JOptionPane.PLAIN_MESSAGE);
+        
+        if (inputTitle == null) {
+            // User cancelled
+            return;
+        }
+        
+        final String newTitle = inputTitle.trim();
+        if (newTitle.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                "Title cannot be empty",
+                "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        if (newTitle.length() > 200) {
+            JOptionPane.showMessageDialog(this,
+                "Title must be at most 200 characters",
+                "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        executorService.execute(() -> {
+            try {
+                apiClient.updateConversationTitle(userSession.getUserId(), conversationId, newTitle);
+                SwingUtilities.invokeLater(() -> {
+                    conversationPanel.updateConversationTitle(conversationId, newTitle);
+                });
+            } catch (ApiException e) {
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(this,
+                        "Failed to rename conversation: " + e.getMessage(),
                         "Error", JOptionPane.ERROR_MESSAGE);
                 });
             }

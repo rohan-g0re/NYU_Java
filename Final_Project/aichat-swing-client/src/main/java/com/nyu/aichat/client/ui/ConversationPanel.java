@@ -6,8 +6,6 @@ import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -21,13 +19,16 @@ public class ConversationPanel extends JPanel {
     private Consumer<Long> onConversationSelected;
     private Runnable onNewChat;
     private Consumer<Long> onDeleteConversation;
+    private Consumer<Long> onRenameConversation;
     
     public ConversationPanel(Consumer<Long> onConversationSelected,
                             Runnable onNewChat,
-                            Consumer<Long> onDeleteConversation) {
+                            Consumer<Long> onDeleteConversation,
+                            Consumer<Long> onRenameConversation) {
         this.onConversationSelected = onConversationSelected;
         this.onNewChat = onNewChat;
         this.onDeleteConversation = onDeleteConversation;
+        this.onRenameConversation = onRenameConversation;
         
         setupUI();
     }
@@ -63,8 +64,17 @@ public class ConversationPanel extends JPanel {
             }
         });
         
-        // Add right-click menu for delete
+        // Add right-click menu for rename and delete
         JPopupMenu popupMenu = new JPopupMenu();
+        JMenuItem renameItem = new JMenuItem("Rename");
+        renameItem.addActionListener(e -> {
+            ConversationView selected = conversationList.getSelectedValue();
+            if (selected != null && onRenameConversation != null) {
+                onRenameConversation.accept(selected.getId());
+            }
+        });
+        popupMenu.add(renameItem);
+        
         JMenuItem deleteItem = new JMenuItem("Delete");
         deleteItem.addActionListener(e -> {
             ConversationView selected = conversationList.getSelectedValue();
@@ -97,6 +107,27 @@ public class ConversationPanel extends JPanel {
             ConversationView conv = listModel.getElementAt(i);
             if (conv.getId().equals(conversationId)) {
                 listModel.removeElementAt(i);
+                break;
+            }
+        }
+    }
+    
+    public ConversationView getConversationById(Long conversationId) {
+        for (int i = 0; i < listModel.getSize(); i++) {
+            ConversationView conv = listModel.getElementAt(i);
+            if (conv.getId().equals(conversationId)) {
+                return conv;
+            }
+        }
+        return null;
+    }
+    
+    public void updateConversationTitle(Long conversationId, String newTitle) {
+        for (int i = 0; i < listModel.getSize(); i++) {
+            ConversationView conv = listModel.getElementAt(i);
+            if (conv.getId().equals(conversationId)) {
+                conv.setTitle(newTitle);
+                listModel.setElementAt(conv, i);
                 break;
             }
         }
