@@ -132,11 +132,6 @@ cd aichat-swing-client
 mvn clean install
 ```
 
-### Running Tests
-```bash
-mvn test
-```
-
 ## License
 
 This project is part of the NYU Java course final project.

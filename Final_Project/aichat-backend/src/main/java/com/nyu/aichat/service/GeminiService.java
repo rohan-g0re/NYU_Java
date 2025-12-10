@@ -85,6 +85,12 @@ public class GeminiService {
     private String buildPrompt(String userMessage, List<Message> contextMessages) {
         StringBuilder prompt = new StringBuilder();
         
+        // Add system instruction at the beginning
+        prompt.append("SYSTEM INSTRUCTION: You are a helpful AI assistant. ");
+        prompt.append("Format your responses using plain text only. ");
+        prompt.append("Do not use markdown bold (** **) or asterisk bullets (*). ");
+        prompt.append("Use simple text with dashes (-) for lists if needed.\n\n");
+        
         // Context messages come in DESC order (most recent first), but we need chronological order
         // Reverse the list to get oldest first, then limit to last 6
         List<Message> recentMessages = contextMessages.stream()

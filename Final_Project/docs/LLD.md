@@ -81,7 +81,7 @@ Generating the complete LLD document.
           ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │              Google Gemini API (HTTPS)                          │
-│              Model: gemini-pro                                  │
+│              Model: gemini-2.5-flash                           │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -192,7 +192,7 @@ NYU_Java/
 |-------------------|--------------|--------------------------------|--------------------------------|
 | `id`              | BIGSERIAL    | PRIMARY KEY                    | Auto-incrementing message ID   |
 | `conv_id`         | INT          | NOT NULL, REFERENCES conversation(id) | Parent conversation        |
-| `role`            | TEXT         | NOT NULL, CHECK (role IN ('user','assistant')) | Message sender role    |
+| `role`            | TEXT         | NOT NULL, CHECK (role IN ('USER','ASSISTANT')) | Message sender role (uppercase)    |
 | `content`         | TEXT         | NOT NULL                       | Message content (max 4000 chars) |
 | `ts`              | TIMESTAMPTZ  | DEFAULT now()                  | Message timestamp              |
 | `prev_message_id` | BIGINT       | NULL, REFERENCES message(id)  | Previous message in linked list |
@@ -444,8 +444,9 @@ public class ChatService {
 ```java
 @Service
 public class GeminiService {
-    private static final String GEMINI_API_KEY = System.getenv("GEMINI_API_KEY");
-    private static final String MODEL = "gemini-pro";
+    @Value("${gemini.api.key:}")
+    private String geminiApiKey;
+    private static final String MODEL = "gemini-2.5-flash";
     private static final int TIMEOUT_SECONDS = 10;
     private static final int CONTEXT_MESSAGES = 6;
     
@@ -579,7 +580,7 @@ public class LoginRequest {
 ```java
 public class CreateConversationRequest {
     @Size(max = 200)
-    private String title;  // Optional, defaults to "New Chat"
+    private String title;  // Optional, defaults to serial numbering: "New Chat 1", "New Chat 2", etc.
 }
 ```
 
@@ -1051,7 +1052,7 @@ executorService.execute(() -> {
 **Backend Configuration:**
 - Port: `server.port=8080` (in `application.properties`)
 - Database: PostgreSQL connection settings
-- Gemini API: `GEMINI_API_KEY` environment variable
+- Gemini API: `gemini.api.key=your_api_key` (in `application.properties`)
 
 **Client Configuration:**
 - API URL: `api.baseUrl=http://localhost:8080/api/v1` (in `config.properties`)
@@ -1122,48 +1123,6 @@ ConversationPanel.onConversationSelected(convId)
 - Invalid JSON: Catch `JsonSyntaxException`, show parse error
 - Missing fields: Gson uses defaults (null for missing fields)
 - Type mismatches: Gson throws exception, caught as `ApiException`
-
-### 8.7 Testing Integration
-
-**Manual Integration Tests:**
-
-1. **End-to-End Login:**
-   ```bash
-   # Terminal 1: Start backend
-   cd aichat-backend
-   mvn spring-boot:run
-   
-   # Terminal 2: Start client
-   cd aichat-swing-client
-   mvn exec:java -Dexec.mainClass="com.nyu.aichat.client.Main"
-   
-   # In client: Login with test credentials
-   # Verify: MainChatFrame opens, conversations load
-   ```
-
-2. **Message Flow Test:**
-   - Create new conversation
-   - Send message: "Hello"
-   - Verify: User message appears immediately (optimistic)
-   - Verify: AI response appears after 2-5 seconds
-   - Verify: Both messages persist after restart
-
-3. **Error Handling Test:**
-   - Stop backend server
-   - In client: Attempt to send message
-   - Verify: Error dialog appears
-   - Restart backend
-   - Verify: Client can reconnect
-
-**Integration Checklist:**
-- [ ] Backend starts successfully
-- [ ] Client connects to backend
-- [ ] Login/signup works
-- [ ] Conversations load
-- [ ] Messages send and receive
-- [ ] Errors display correctly
-- [ ] UI updates on EDT
-- [ ] No UI freezing during API calls
 
 ---
 
@@ -1253,7 +1212,7 @@ Content-Type: application/json
   "title": "My First Chat"
 }
 ```
-*(title is optional; defaults to "New Chat" if null, "Untitled Chat" if empty)*
+*(title is optional; if null or empty, generates serial title: "New Chat 1", "New Chat 2", etc. based on user's conversation count)*
 
 **Response (201 Created):**
 ```json
@@ -1551,7 +1510,7 @@ X-User-Id: 1
      │             │             │             │             │
      │             │             │             │ HTTP POST   │
      │             │             │             │ /v1/models/ │
-     │             │             │             │ gemini-pro  │
+     │             │             │             │ gemini-2.5-flash │
      │             │             │             │<────────────│
      │             │             │             │ Response    │
      │             │             │<───────────────────────────│
@@ -1712,14 +1671,15 @@ ApiException (base)
 
 ### 12.1 API Configuration
 
-**Environment Variable:**
-```bash
-export GEMINI_API_KEY=your_api_key_here
+**Configuration:**
+Edit `application.properties`:
+```properties
+gemini.api.key=your_api_key_here
 ```
 
 **API Endpoint:**
 ```
-https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent
+https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent
 ```
 
 **Request Format:**
@@ -1765,7 +1725,7 @@ https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateConte
 
 2. **Call API:**
    - Create HTTP POST request to Gemini endpoint
-   - Set `Authorization: Bearer {GEMINI_API_KEY}` header
+   - API key passed as query parameter: `?key={geminiApiKey}`
    - Set timeout to 10 seconds
    - Send JSON request body
 
@@ -1935,7 +1895,7 @@ public ResponseEntity<List<MessageDto>> getMessages(
 
 **Conversation Title Validation:**
 - Maximum length: 200 characters
-- Can be empty (defaults to "Untitled Chat")
+- Can be empty (defaults to serial numbering: "New Chat 1", "New Chat 2", etc.)
 
 ---
 
@@ -1968,6 +1928,9 @@ spring.datasource.hikari.connection-timeout=30000
 # Logging
 logging.level.com.nyu.aichat=INFO
 logging.level.org.springframework.web=INFO
+
+# Gemini API Configuration
+gemini.api.key=your_api_key_here
 ```
 
 ---
@@ -2037,7 +2000,7 @@ CREATE INDEX IF NOT EXISTS idx_conv_deleted ON conversation(user_id, is_deleted)
 CREATE TABLE IF NOT EXISTS message (
     id BIGSERIAL PRIMARY KEY,
     conv_id INT NOT NULL REFERENCES conversation(id),
-    role TEXT CHECK (role IN ('user','assistant')) NOT NULL,
+    role TEXT CHECK (role IN ('USER','ASSISTANT')) NOT NULL,
     content TEXT NOT NULL,
     ts TIMESTAMPTZ DEFAULT now(),
     prev_message_id BIGINT NULL REFERENCES message(id),
@@ -2058,14 +2021,12 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
 - [ ] Configure `application.properties`
 - [ ] Create database schema (`schema.sql`)
 - [ ] Set up PostgreSQL connection
-- [ ] Test database connectivity
 
 ### Phase 2: Backend Entities & Repositories
 - [ ] Create `User` entity
 - [ ] Create `Conversation` entity
 - [ ] Create `Message` entity
 - [ ] Create repository interfaces
-- [ ] Test basic CRUD operations
 
 ### Phase 3: Backend Services
 - [ ] Implement `AuthService` (signup, login)
@@ -2078,7 +2039,6 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
 - [ ] Implement `AuthController`
 - [ ] Implement `ChatController`
 - [ ] Implement `GlobalExceptionHandler`
-- [ ] Test all endpoints with Postman
 
 ### Phase 5: Frontend Setup
 - [ ] Create Swing client project (Maven)
@@ -2094,125 +2054,26 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
 - [ ] Implement `MessageBubble`
 - [ ] Implement `InputPanel`
 
-### Phase 7: Integration
+### Phase 7: Deployment Setup
 - [ ] **Backend Setup:**
   - [ ] Start Spring Boot backend server (`mvn spring-boot:run`)
   - [ ] Verify backend is running on `http://localhost:8080`
-  - [ ] Test backend endpoints with Postman/curl
   - [ ] Ensure database is initialized and accessible
-  - [ ] Set `GEMINI_API_KEY` environment variable
+  - [ ] Configure `gemini.api.key` in `application.properties`
   
 - [ ] **Client Configuration:**
   - [ ] Verify `config.properties` has correct `api.baseUrl`
   - [ ] Ensure backend URL matches backend server port
-  - [ ] Test `ConfigLoader` reads properties correctly
-  
-- [ ] **API Client Integration:**
-  - [ ] Test `ApiClient` can connect to backend
-  - [ ] Verify `X-User-Id` header is sent correctly
-  - [ ] Test error handling (network errors, HTTP errors)
-  - [ ] Verify JSON parsing works (Instant deserialization)
-  - [ ] Test all API endpoints from client
-  
-- [ ] **Authentication Flow:**
-  - [ ] Test login with valid credentials
-  - [ ] Test login with invalid credentials (error display)
-  - [ ] Test signup with new username
-  - [ ] Test signup with existing username (error handling)
-  - [ ] Verify `UserSession` is created correctly
-  - [ ] Verify `LoginFrame` transitions to `MainChatFrame`
-  
-- [ ] **Conversation Management:**
-  - [ ] Test conversation list loads on startup
-  - [ ] Test creating new conversation
-  - [ ] Test selecting existing conversation
-  - [ ] Test deleting conversation (with confirmation)
-  - [ ] Verify conversation panel updates correctly
-  
-- [ ] **Message Flow:**
-  - [ ] Test sending user message (optimistic update)
-  - [ ] Test receiving AI response
-  - [ ] Test message history loads correctly
-  - [ ] Test multiple messages in sequence
-  - [ ] Test switching conversations preserves state
-  - [ ] Verify message bubbles render correctly (user right, assistant left)
-  
-- [ ] **Error Handling:**
-  - [ ] Test network error (backend offline)
-  - [ ] Test timeout error (slow backend)
-  - [ ] Test backend error responses (400, 404, 500)
-  - [ ] Verify error messages display correctly
-  - [ ] Test concurrent message sending
-  
-- [ ] **UI/UX Testing:**
-  - [ ] Test Enter key sends message
-  - [ ] Test Shift+Enter creates new line
-  - [ ] Test scrolling in message panel
-  - [ ] Test window resizing
-  - [ ] Test conversation list scrolling
-  - [ ] Verify loading states (button disabled during API calls)
 
-### Phase 8: Polish
-- [ ] Add loading indicators
-- [ ] Improve error messages
-- [ ] Test edge cases
+### Phase 8: Documentation
 - [ ] Write README files
-- [ ] Create demo script
+- [ ] Document configuration requirements
 
 ---
 
-## 19. Testing Strategy
+## 19. Deployment Instructions
 
-### 18.1 Backend Testing
-
-**Manual Testing (Postman/curl):**
-1. Test signup with valid/invalid usernames
-2. Test login with correct/incorrect credentials
-3. Test conversation creation (with/without title)
-4. Test message sending
-5. Test conversation listing
-6. Test message history retrieval
-7. Test conversation renaming
-8. Test conversation deletion (soft delete)
-9. Test authorization (accessing other user's conversations)
-
-**Edge Cases:**
-- Username already exists
-- Password too short
-- Empty message content
-- Message too long (>4000 chars)
-- Conversation limit reached (50)
-- Gemini API timeout
-- Database connection failure
-
----
-
-### 18.2 Frontend Testing
-
-**Manual Testing:**
-1. Login with valid credentials
-2. Signup with new username
-3. Create new conversation
-4. Send multiple messages
-5. Switch between conversations
-6. Send message while AI is responding (concurrent)
-7. Test network error handling
-8. Test empty state (no conversations)
-9. Test long messages (word wrap)
-10. Restart app and verify persistence
-
-**UI Testing:**
-- Verify messages align correctly (user right, assistant left)
-- Verify timestamps display
-- Verify scrolling works
-- Verify input validation (empty message prevention)
-- Verify loading indicators appear
-
----
-
-## 20. Deployment Instructions
-
-### 19.1 Backend Deployment
+### 19.1 Backend Setup
 
 1. **Prerequisites:**
    - JDK 1.8 installed
@@ -2225,9 +2086,10 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
    psql ai_chat < schema.sql
    ```
 
-3. **Environment Variables:**
-   ```bash
-   export GEMINI_API_KEY=your_key_here
+3. **Configure Gemini API Key:**
+   Edit `src/main/resources/application.properties`:
+   ```properties
+   gemini.api.key=your_key_here
    ```
 
 4. **Build & Run:**
@@ -2237,13 +2099,13 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
    java -jar target/aichat-backend-1.0.0.jar
    ```
 
-5. **Verify:**
+5. **Startup Verification:**
    - Check logs for "Started AichatApplication"
-   - Test: `curl http://localhost:8080/api/v1/auth/login`
+   - Backend should be accessible at `http://localhost:8080`
 
 ---
 
-### 20.2 Frontend Deployment
+### 19.2 Frontend Setup
 
 1. **Prerequisites:**
    - JDK 1.8 installed
@@ -2273,15 +2135,13 @@ CREATE INDEX IF NOT EXISTS idx_message_next ON message(conv_id, next_message_id)
    mvn exec:java -Dexec.mainClass="com.nyu.aichat.client.Main"
    ```
 
-5. **Verify:**
-   - Login window appears
-   - Can connect to backend (test login)
-   - Conversations load after login
-   - Messages send and receive correctly
+5. **Startup:**
+   - Login window should appear
+   - Ensure backend is running before launching client
 
 ---
 
-## 21. Summary
+## 20. Summary
 
 This LLD provides:
 

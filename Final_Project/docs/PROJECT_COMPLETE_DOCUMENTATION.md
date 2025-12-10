@@ -90,7 +90,7 @@ A Java-based desktop application that allows users to chat with an AI assistant 
           ▼ (External API Call)
 ┌─────────────────────────────────────────────────────────────────┐
 │              Google Gemini API (HTTPS)                          │
-│              Model: gemini-pro                                  │
+│              Model: gemini-2.5-flash                            │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -802,11 +802,7 @@ psql ai_chat < aichat-backend/src/main/resources/db/schema.sql
 Edit `aichat-backend/src/main/resources/application.properties`:
 ```properties
 spring.datasource.password=YOUR_POSTGRES_PASSWORD
-```
-
-Set Gemini API key:
-```bash
-export GEMINI_API_KEY=your_gemini_api_key
+gemini.api.key=your_gemini_api_key
 ```
 
 ### 3. Start Backend
@@ -827,37 +823,6 @@ Or build and run JAR:
 mvn clean package
 java -jar target/aichat-swing-client-1.0.0.jar
 ```
-
----
-
-## 12. Testing Checklist
-
-### Backend Tests
-- [ ] Signup with valid username/password
-- [ ] Signup with existing username (should fail)
-- [ ] Login with valid credentials
-- [ ] Login with wrong password (should fail)
-- [ ] Create conversation
-- [ ] List conversations
-- [ ] Send message and get AI reply
-- [ ] Get message history
-- [ ] Update conversation title
-- [ ] Delete conversation (soft delete)
-- [ ] Access another user's conversation (should fail)
-
-### Client Tests
-- [ ] Login screen displays
-- [ ] Login with valid credentials → opens main window
-- [ ] Signup checkbox toggles button text
-- [ ] Create new conversation
-- [ ] Select conversation → loads messages
-- [ ] Send message → appears immediately
-- [ ] AI response appears after delay
-- [ ] Delete conversation with confirmation
-- [ ] Error messages display for failures
-- [ ] UI doesn't freeze during API calls
-- [ ] Enter key sends message
-- [ ] Shift+Enter creates newline
 
 ---
 

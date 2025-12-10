@@ -17,17 +17,13 @@ Spring Boot REST API backend for the AI Chat Desktop Application.
    psql ai_chat < src/main/resources/db/schema.sql
    ```
 
-2. **Configure Database:**
+2. **Configure Database and Gemini API Key:**
    Edit `src/main/resources/application.properties`:
    ```properties
    spring.datasource.url=jdbc:postgresql://localhost:5432/ai_chat
    spring.datasource.username=postgres
    spring.datasource.password=your_password
-   ```
-
-3. **Set Gemini API Key:**
-   ```bash
-   export GEMINI_API_KEY=your_api_key_here
+   gemini.api.key=your_api_key_here
    ```
 
 ## Build and Run
@@ -79,40 +75,7 @@ Common error codes:
 - `AI_SERVICE_ERROR` - Gemini API failure (500)
 - `INTERNAL_ERROR` - Unexpected server error (500)
 
-## Testing
-
-### Postman Collection
-Comprehensive test suite available:
-- **Collection:** `docs/postman/AI_Chat_Backend_API.json`
-- **Environment:** `docs/postman/AI_Chat_Backend_API_Environment.json`
-
-The collection includes 33+ test cases covering:
-- Authentication (8 tests)
-- Conversations (11 tests)
-- Messages (9 tests)
-- Error scenarios (5 tests)
-
-### Quick Test with curl
-
-```bash
-# Signup
-curl -X POST http://localhost:8080/api/v1/auth/signup \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"password123"}'
-
-# Login
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"password123"}'
-
-# Create Conversation (replace {userId} with actual ID)
-curl -X POST http://localhost:8080/api/v1/conversations \
-  -H "Content-Type: application/json" \
-  -H "X-User-Id: {userId}" \
-  -d '{"title":"My First Chat"}'
-```
-
-### Full API Documentation
+## API Documentation
 For complete API specifications, request/response formats, and examples, see:
 - `docs/LLD.md` sections 8.1-8.2 (API Specifications)
 
