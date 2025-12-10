@@ -9,6 +9,7 @@ import com.nyu.aichat.util.Constants;
 import com.nyu.aichat.util.TextCleaner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -29,7 +30,9 @@ import java.util.stream.Collectors;
 public class GeminiService {
     private static final Logger logger = LoggerFactory.getLogger(GeminiService.class);
     
-    private static final String GEMINI_API_KEY = System.getenv("GEMINI_API_KEY");
+    @Value("${gemini.api.key:}")
+    private String geminiApiKey;
+    
     private static final String MODEL = "gemini-2.5-flash";
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent";
     private static final int TIMEOUT_SECONDS = 10000; // 10 seconds in milliseconds
@@ -50,7 +53,7 @@ public class GeminiService {
      * @throws AiServiceException if API key is missing or API call fails
      */
     public String generateResponse(String userMessage, List<Message> contextMessages) {
-        if (GEMINI_API_KEY == null || GEMINI_API_KEY.isEmpty()) {
+        if (geminiApiKey == null || geminiApiKey.isEmpty()) {
             logger.error("Gemini API key not configured");
             throw new AiServiceException("Gemini API key not configured");
         }
@@ -134,7 +137,7 @@ public class GeminiService {
      * @throws Exception if URL creation fails
      */
     private HttpURLConnection createConnection() throws Exception {
-        URL url = new URL(API_URL + "?key=" + GEMINI_API_KEY);
+        URL url = new URL(API_URL + "?key=" + geminiApiKey);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");

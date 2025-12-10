@@ -2,8 +2,6 @@ package com.nyu.aichat.client.ui;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.function.Consumer;
@@ -98,6 +96,19 @@ public class InputPanel extends JPanel {
         
         public PlaceholderTextArea(int rows, int columns) {
             super(rows, columns);
+            
+            // Repaint when focus changes to show/hide placeholder
+            addFocusListener(new java.awt.event.FocusAdapter() {
+                @Override
+                public void focusGained(java.awt.event.FocusEvent e) {
+                    repaint(); // Hide placeholder when focused
+                }
+                
+                @Override
+                public void focusLost(java.awt.event.FocusEvent e) {
+                    repaint(); // Show placeholder if empty when focus lost
+                }
+            });
         }
         
         public void setPlaceholder(String placeholder) {
@@ -108,7 +119,8 @@ public class InputPanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            if (placeholder != null && getText().isEmpty() && !isFocusOwner()) {
+            // Only show placeholder when: has placeholder, text is empty, and not focused
+            if (placeholder != null && getText().isEmpty() && !hasFocus()) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(Color.GRAY);

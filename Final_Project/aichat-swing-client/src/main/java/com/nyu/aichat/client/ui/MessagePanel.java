@@ -42,7 +42,15 @@ public class MessagePanel extends JScrollPane {
     
     public void addMessage(MessageView message, boolean isUser) {
         MessageBubble bubble = createMessageBubble(message, isUser);
-        contentPanel.add(bubble);
+        
+        // Wrap bubble in a panel with FlowLayout to control positioning
+        // User messages on RIGHT, AI messages on LEFT
+        JPanel wrapper = new JPanel(new FlowLayout(isUser ? FlowLayout.RIGHT : FlowLayout.LEFT, 0, 0));
+        wrapper.setOpaque(false);
+        wrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        wrapper.add(bubble);
+        
+        contentPanel.add(wrapper);
         contentPanel.add(Box.createVerticalStrut(10)); // Spacing between messages
         
         revalidate();

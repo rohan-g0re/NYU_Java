@@ -38,7 +38,11 @@ public class MessageBubble extends JPanel {
         // Set fixed width and let JTextArea calculate the height automatically
         int maxWidth = 400;
         contentArea.setSize(maxWidth, Short.MAX_VALUE);
-        contentArea.setPreferredSize(new Dimension(maxWidth, contentArea.getPreferredSize().height));
+        Dimension preferredSize = contentArea.getPreferredSize();
+        int calculatedHeight = Math.max(preferredSize.height, contentArea.getFont().getSize() + 16);
+        contentArea.setPreferredSize(new Dimension(maxWidth, calculatedHeight));
+        contentArea.setMaximumSize(new Dimension(maxWidth, Integer.MAX_VALUE));
+        contentArea.setMinimumSize(new Dimension(100, calculatedHeight));
         
         if (isUserMessage) {
             contentArea.setBackground(new Color(0, 123, 255)); // Blue
@@ -64,8 +68,7 @@ public class MessageBubble extends JPanel {
         
         add(timestampLabel);
         
-        // Set alignment
-        setAlignmentX(isUserMessage ? Component.LEFT_ALIGNMENT : Component.RIGHT_ALIGNMENT);
+        // Note: Positioning (left/right) is handled by wrapper in MessagePanel
         setMaximumSize(new Dimension(500, Integer.MAX_VALUE));
     }
     
