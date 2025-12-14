@@ -33,7 +33,7 @@ public class GeminiService {
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
     
-    private static final String MODEL = "gemini-2.5-flash";
+    private static final String MODEL = "gemini-2.5-flash-lite";
     private static final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent";
     private static final int TIMEOUT_SECONDS = 10000; // 10 seconds in milliseconds
     private static final int CONTEXT_MESSAGES = 6;
